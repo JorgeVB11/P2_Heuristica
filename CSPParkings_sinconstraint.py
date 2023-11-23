@@ -40,32 +40,32 @@ class Parking:
 
 
 
-def crear_parking(self):
-    for i in range(self.filas):
-        for j in range(self.columnas):
-            plaza = PlazaDeGaraje(i+1,j+1) 
-            self.plazas.append(plaza)
-    for i in plazas_conexion:
-        for j in self.plazas:
-            if i[0] == j.ubicacion_fila and i[1] == j.ubicacion_columna:
-                j.congelador = True
-    return
+    def crear_parking(self):
+        for i in range(self.filas):
+            for j in range(self.columnas):
+                plaza = PlazaDeGaraje(i+1,j+1) 
+                self.plazas.append(plaza)
+        for i in self.plazas_conexion:
+            for j in self.plazas:
+                if i[0] == j.ubicacion_fila and i[1] == j.ubicacion_columna:
+                    j.congelador = True
+        return
 
-def comprobar_parking_asignado(self):
-    #1. Todo vehículo tiene que tener asignada una plaza y solo una. Dos coches no pueden tener la misma
-    for i in self.plazas:
-        if i.coche.ubicacion == None:
-            return -1 #control de que todos tienen plaza
-        for j in self.plazas:
-            if i.coche.ubicacion == j.coche.ubicacion and i != j: #control de que no son la misma
+    def comprobar_parking_asignado(self):
+        #1. Todo vehículo tiene que tener asignada una plaza y solo una. Dos coches no pueden tener la misma
+        for i in self.plazas:
+            if i.coche.ubicacion == None:
+                return -1 #control de que todos tienen plaza
+            for j in self.plazas:
+                if i.coche.ubicacion == j.coche.ubicacion and i != j: #control de que no son la misma
+                    return -1
+        return 0
+
+    def comprobar_electricidad(self):
+        for item in self.plazas:
+            if item.congelador == True and item.coche.tengo_congelador == False or item.congelador == False and item.coche.tengo_congelador == True:
                 return -1
-    return 0
+        return 0
 
-def comprobar_electricidad(self):
-    for item in self.plazas:
-        if item.congelador == True and item.coche.tengo_congelador == False or item.congelador == False and item.coche.tengo_congelador == True:
-            return -1
-    return 0
-
-def vehiculo_prioritario(self):
-    pass
+    def vehiculo_prioritario(self):
+        pass
