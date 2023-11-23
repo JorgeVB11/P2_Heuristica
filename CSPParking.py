@@ -33,3 +33,82 @@
 #preferentes pq sabremos que en esa fila no van más cosas
 #a continuación si en la fila no hay ambulancias preferentes se meten no preferentes sin refrigerador y por ultimo prederentes sin refrigerador
 #esto sería para encontrar una solución, para encontrar todas las que hay habria que pensar que tipo de metodo heuristico usamos
+
+#!/usr/bin/env python
+from constraint import Problem, AllDifferentConstraint
+
+def cargar_datos(path):
+    with open(path, 'r') as file:
+        lines = file.readlines()
+
+    # Obtener filas y columnas
+    filas, columnas = map(int, lines[0].strip().split('x'))
+
+    # Obtener plazas de conexión
+    plazas_conexion = [tuple(map(int, coord.strip('()').split(','))) for coord in lines[1][3:].split(')(')]
+
+    # Obtener vehículos
+    vehiculos = [line.strip() for line in lines[2:]]
+
+    return filas, columnas, plazas_conexion, vehiculos
+
+
+"""
+def resolver_problema(filas, columnas, plazas_conexion, vehiculos):
+    problem = Problem()
+
+    plazas = [(i, j) for i in range(1, filas + 1) for j in range(1, columnas + 1)]
+
+    problem.addVariables(plazas, vehiculos)
+
+    # Restricciones
+    problem.addConstraint(AllDifferentConstraint(), plazas)
+
+    # Otras restricciones según las reglas del problema
+
+    # Obtener la solución
+    solucion = problem.getSolution()
+
+    print("Solución encontrada:", solucion)
+
+    return solucion
+
+def guardar_solucion(solucion, path_salida):
+    with open(path_salida, 'w') as file:
+        # Escribir el número de soluciones encontradas
+        file.write(f'"N. Sol:", {len(solucion)}\n')
+
+        # Escribir la ocupación del parking
+        for i in range(1, filas + 1):
+            for j in range(1, columnas + 1):
+                plaza = (i, j)
+                ocupacion = solucion.get(plaza, '−')
+                file.write(f'"{ocupacion}",')
+            file.write('\n')
+
+            """
+if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) != 2:
+        print("Uso: python CSPParking.py <path_parking>")
+        sys.exit(1)
+
+    path_parking = sys.argv[1]
+    filas, columnas, plazas_conexion, vehiculos = cargar_datos(path_parking)
+    # Imprimir los valores obtenidos
+    print(f"Filas: {filas}")
+    print(f"Columnas: {columnas}")
+    print(f"Plazas de Conexión: {plazas_conexion}")
+    print(f"Vehículos: {vehiculos}")
+"""
+    solucion = resolver_problema(filas, columnas, plazas_conexion, vehiculos)
+
+    if solucion:
+        path_salida = path_parking.replace('.txt', '.csv')
+        guardar_solucion(solucion, path_salida)
+        print(f"Solución guardada en {path_salida}")
+    else:
+        print("No se encontró una solución.")
+
+"""
