@@ -36,6 +36,7 @@
 
 #!/usr/bin/env python
 from constraint import Problem, AllDifferentConstraint
+import csv
 
 def cargar_datos(path):
     with open(path, 'r') as file:
@@ -54,7 +55,6 @@ def cargar_datos(path):
     return filas, columnas, plazas_conexion, vehiculos
 
 
-"""
 def resolver_problema(filas, columnas, plazas_conexion, vehiculos):
     problem = Problem()
 
@@ -63,10 +63,17 @@ def resolver_problema(filas, columnas, plazas_conexion, vehiculos):
     problem.addVariables(plazas, vehiculos)
 
     # Restricciones
-    problem.addConstraint(AllDifferentConstraint(), plazas)
+    #problem.addConstraint(AllDifferentConstraint(), plazas)
 
     # Otras restricciones según las reglas del problema
+    #3. Los vehıculos provistos de congelador solo pueden ocupar plazas con conexion a la red electrica
+    for vehiculo in vehiculos:
+        vehiculo_id, tipo, congelador = vehiculo.split('-')
+        vehiculo_id = int(vehiculo_id)
 
+        if congelador == 'C':
+            for plaza in plazas_conexion:
+                problem.addConstraint(lambda v, p=plaza: v == f"{vehiculo_id}-{tipo}-{congelador}" if p == plaza else True, (plaza,))
     # Obtener la solución
     solucion = problem.getSolution()
 
@@ -75,19 +82,21 @@ def resolver_problema(filas, columnas, plazas_conexion, vehiculos):
     return solucion
 
 def guardar_solucion(solucion, path_salida):
-    with open(path_salida, 'w') as file:
+    with open(path_salida, 'w', newline='') as file:
+        writer = csv.writer(file)
+
         # Escribir el número de soluciones encontradas
-        file.write(f'"N. Sol:", {len(solucion)}\n')
+        writer.writerow(["N. Sol:", len(solucion)])
 
         # Escribir la ocupación del parking
         for i in range(1, filas + 1):
+            fila = []
             for j in range(1, columnas + 1):
                 plaza = (i, j)
                 ocupacion = solucion.get(plaza, '−')
-                file.write(f'"{ocupacion}",')
-            file.write('\n')
+                fila.append(ocupacion)
+            writer.writerow(fila)
 
-            """
 if __name__ == "__main__":
     import sys
 
@@ -102,14 +111,14 @@ if __name__ == "__main__":
     print(f"Columnas: {columnas}")
     print(f"Plazas de Conexión: {plazas_conexion}")
     print(f"Vehículos: {vehiculos}")
-"""
+
     solucion = resolver_problema(filas, columnas, plazas_conexion, vehiculos)
 
     if solucion:
-        path_salida = path_parking.replace('.txt', '.csv')
+        path_salida = ('exit.csv')
         guardar_solucion(solucion, path_salida)
         print(f"Solución guardada en {path_salida}")
     else:
         print("No se encontró una solución.")
 
-"""
+
