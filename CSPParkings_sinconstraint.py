@@ -11,6 +11,7 @@ class PlazaDeGaraje:
 class Coche:
     def __init__(self) -> None:
         self.nombre = ""
+        self.ubicacion = None
         self.id = None
         self.prioritario = "X"
         self.tengo_congelador = False
@@ -51,18 +52,18 @@ def crear_parking(self):
     return
 
 def comprobar_parking_asignado(self):
-    #1. Todo vehículo tiene que tener asignada una plaza y solo una.
-    #En nuestro caso de ninguna manera se podrá asignar 2 vehiculos a una plaza pero si llegaria a ocurrir el error de asignar un vehiculo a 2 plazas
-    #por ello nos aseguramos de que no ocurra
+    #1. Todo vehículo tiene que tener asignada una plaza y solo una. Dos coches no pueden tener la misma
     for i in self.plazas:
+        if i.coche.ubicacion == None:
+            return -1 #control de que todos tienen plaza
         for j in self.plazas:
-            if i.id == j.id and i != j:
+            if i.coche.ubicacion == j.coche.ubicacion and i != j: #control de que no son la misma
                 return -1
     return 0
 
 def comprobar_electricidad(self):
     for item in self.plazas:
-        if item.congelador == True and item.tipo_coche != "C" or item.congelador == False and item.tipo_coche == "C":
+        if item.congelador == True and item.coche.tengo_congelador == False or item.congelador == False and item.coche.tengo_congelador == True:
             return -1
     return 0
 
