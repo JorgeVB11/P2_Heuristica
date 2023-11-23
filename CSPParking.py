@@ -45,7 +45,8 @@ def cargar_datos(path):
     filas, columnas = map(int, lines[0].strip().split('x'))
 
     # Obtener plazas de conexión
-    plazas_conexion = [tuple(map(int, coord.strip('()').split(','))) for coord in lines[1][3:].split(')(')]
+    plazas_conexion_line = lines[1][3:].strip()  # Obtener la línea de las plazas de conexión
+    plazas_conexion = [tuple(map(int, coord.strip('()').split(','))) for coord in plazas_conexion_line.split(')(')]
 
     # Obtener vehículos
     vehiculos = [line.strip() for line in lines[2:]]
