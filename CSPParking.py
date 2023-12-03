@@ -82,7 +82,7 @@ def resolver_problema(filas, columnas, plazas_conexion, vehiculos):
         # Verifica que las plazas a la izquierda y a la derecha estén libres
         for vehiculo2 in vehiculos:
                 vehiculo2_id, tipo2, _ = vehiculo2.split('-')
-                problem.addConstraint(lambda v1, v2: v1[0]-1!=v2[0]  and v1[0]+1!=v2[0], (vehiculo_id, vehiculo2_id))
+                problem.addConstraint(lambda v1, v2: (v1[0]-1!=v2[0] and v1[0]!=1)  or (v1[0]+1!=v2[0] and v1[0]!=filas), (vehiculo_id, vehiculo2_id))
 
     problem.addConstraint(AllDifferentConstraint())
 
