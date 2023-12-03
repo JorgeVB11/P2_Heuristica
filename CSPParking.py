@@ -1,44 +1,7 @@
-#Archivo para hacer el programa
-#------------------------------------
-#-------------INFO GENERAL---------------------
-#Cada vehiculo una plaza
-#vehiculos congelador->enchufe
-#vehiculo TSU no tiene nada delante
-#vehiculo tiene hueco a la izq o dcha
-#---------------------------------------
-#---------------DATOS ENTRADA-----------
-#1ª línea: filas x columnas del parking
-#2ª línea: listado de plazas con conexi´on el´ectrica
-#3ª y posteriores: c´odigo de identificaci´on de los
-#vehículos [ID-TIPO-CONGELADOR]
-#ID: nº secuencial
-#TIPO: TSU/TNU (Urgente/No urgente)
-#CONGELADOR: C/X (Con congelador/Sin congelador)
-#----------------------------------------
-#---------------SE PIDE------------------
-# Modelar este problema como un problema de satisfaccion de restricciones CSP
-#Generar archivo de salida .csv
-#Crear test con casos de prueba
-#----------------------------------------
-#------------A investigar-----------------------
-#Averiguar cómo abrir y leer ficheros txt
-#Averiguar cómo generar archivos csv
-#Mirarse bien los distintos metodos de busqueda ya que necesitamos el nº total de soluciones. Lo que es seguro es que necesitamos un algoritmo que sea completo,
-#no nos vale uno incompleto por muy eficiente que sea para llegar a lo optimo.
-#------------PASOS----------------
-#Crear clase parking
-#Crear ns si clase o struct Parametros de inicio para que el parking reciba los datos del archivo
-#Crear método crear mapa parking para inicializar los campos
-#Para colocar ambulancias, 1º habrá que colocar las que son con refrigerador, no preferentes al final y después 
-#preferentes pq sabremos que en esa fila no van más cosas
-#a continuación si en la fila no hay ambulancias preferentes se meten no preferentes sin refrigerador y por ultimo prederentes sin refrigerador
-#esto sería para encontrar una solución, para encontrar todas las que hay habria que pensar que tipo de metodo heuristico usamos
-
-#!/usr/bin/env python
 from constraint import Problem, AllDifferentConstraint, InSetConstraint
 import csv
+import random
 
-vacio = "-"
 
 def cargar_datos(path):
     with open(path, 'r') as file:
@@ -56,7 +19,17 @@ def cargar_datos(path):
 
     return filas, columnas, plazas_conexion, vehiculos
 
-
+# Restricción para v1 sin vehículos a la izquierda y a la derecha al mismo tiempo
+def restriccion_v1(v1, v2, v3):
+                    if v1[0] == 1:  # en la primera fila
+                         if (v1[0] + 1 == v2[0] and v1[1]==v2[1]) or (v1[0] + 1 == v3[0] and v1[1]==v3[1]):  # no tiene un vehículo adyacente a la derecha
+                            return False
+                    if v1[0] == filas:  # en la ultima fila
+                         if (v1[0] - 1 == v2[0] and v1[1]==v2[1]) or (v1[0] - 1 == v3[0] and v1[1]==v3[1]):  # no tiene un vehículo adyacente a la izquierda
+                            return False
+                    if abs(v1[0] - v2[0]) == 1 and abs(v1[0] - v3[0]) == 1 and v1[1]==v2[1]==v3[1]: #no puede tener uno a la izquierda y a la derecha a la vez
+                            return False
+                    return True
 
 def resolver_problema(filas, columnas, plazas_conexion, vehiculos):
     problem = Problem()
@@ -71,44 +44,58 @@ def resolver_problema(filas, columnas, plazas_conexion, vehiculos):
         if congelador=='C':
             problem.addConstraint(InSetConstraint(plazas_conexion), [vehiculo_id])
 
-        # Restricción para TSU que no puede tener TNU por delante
-        if tipo == 'TSU':  
-            for vehiculo2 in vehiculos:
-                vehiculo2_id, tipo2, _ = vehiculo2.split('-')
-                if tipo2 == 'TNU':
-                    problem.addConstraint(lambda tsu, tnu: tsu[0] != tnu[0] or tsu[1] >= tnu[1], (vehiculo_id, vehiculo2_id))
-
-        # Restricción de maniobrabilidad
-        # Verifica que las plazas a la izquierda y a la derecha estén libres
+        # Restricción para TSU que no puede tener TNU por delante 
         for vehiculo2 in vehiculos:
-                vehiculo2_id, tipo2, _ = vehiculo2.split('-')
-                problem.addConstraint(lambda v1, v2: (v1[0]-1!=v2[0] and v1[0]!=1)  or (v1[0]+1!=v2[0] and v1[0]!=filas), (vehiculo_id, vehiculo2_id))
+            vehiculo2_id, tipo2, _ = vehiculo2.split('-')
+            if tipo == 'TSU'  and  tipo2 == 'TNU':
+                problem.addConstraint(lambda tsu, tnu: tsu[0] != tnu[0] or tsu[1] >= tnu[1], (vehiculo_id, vehiculo2_id))
 
+            # Restricción de maniobrabilidad
+            # Verifica que las plazas a la izquierda y a la derecha estén libres
+            for vehiculo3 in vehiculos:
+                vehiculo3_id, _ , _ = vehiculo3.split('-')
+            
+                problem.addConstraint(restriccion_v1, (vehiculo_id, vehiculo2_id, vehiculo3_id))
+                
     problem.addConstraint(AllDifferentConstraint())
 
-    # Obtener la solución
-    solucion = problem.getSolution()
+    # Obtener las soluciones
+    soluciones = problem.getSolutions()
 
-    print("Solución encontrada:", solucion)
+    return soluciones
 
-    return solucion
 
-def guardar_solucion(solucion, path_salida, filas, columnas):
+def guardar_soluciones(soluciones, path_salida, filas, columnas):
     with open(path_salida, 'w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
 
         # Escribir el número de soluciones encontradas
-        writer.writerow(["N. Sol:", 1])
+        writer.writerow(["N. Sol:", len(soluciones)])
+        writer.writerow([ ])
 
-        # Escribir la ocupación del parking
-        for i in range(1, filas + 1):
-            fila = []
-            for j in range(1, columnas + 1):
-                plaza = (i, j)
-                ocupacion = solucion.get(plaza, vacio)
-                fila.append(ocupacion)
-            writer.writerow(fila)
+        if len(soluciones) > 2:
+            soluciones = random.sample(soluciones, 2)
+        
+        for index, solucion in enumerate(soluciones):
+            # Escribe una línea indicando la solución actual
+            writer.writerow([f"Solución {index + 1}"])
+
+            # Crear una matriz para representar el parking
+            parking = [['-'] * columnas for i in range(filas)]
+            # Rellenar la matriz con los vehículos de la solución
+            for vehiculo, plaza in solucion.items():
+                info_vehiculo = next((v for v in vehiculos if v.startswith(vehiculo)), None)
+                if info_vehiculo:
+                    parking[plaza[0]-1][plaza[1]-1] = info_vehiculo
             
+            # Escribir la matriz en el archivo
+            for fila in parking:
+                writer.writerow(fila)
+            
+            # Agregar una fila de espacio si no es la última solución
+            if index < len(soluciones) - 1:
+                writer.writerow([ ])
+        
 if __name__ == "__main__":
     import sys
 
@@ -124,14 +111,16 @@ if __name__ == "__main__":
     print(f"Plazas de Conexión: {plazas_conexion}")
     print(f"Vehículos: {vehiculos}")
 
-    solucion = resolver_problema(filas, columnas, plazas_conexion, vehiculos)
+    soluciones = resolver_problema(filas, columnas, plazas_conexion, vehiculos)
 
-    if solucion:
+    if soluciones:
+        # Barajar las soluciones para mostrar algunas de forma aleatoria
+        random.shuffle(soluciones)
         path_salida = 'exit.csv'
-        guardar_solucion(solucion, path_salida, filas, columnas)
-        print(f"Solución guardada en {path_salida}")
+        guardar_soluciones(soluciones, path_salida, filas, columnas)
+        print(f"Soluciones guardadas en {path_salida}")
     else:
-        print("No se encontró una solución.")
+        print("No se encontraron soluciones.")
 
     
         """
