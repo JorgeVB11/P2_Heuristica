@@ -35,8 +35,10 @@
 #esto sería para encontrar una solución, para encontrar todas las que hay habria que pensar que tipo de metodo heuristico usamos
 
 #!/usr/bin/env python
-from constraint import Problem, AllDifferentConstraint
+from constraint import Problem, AllDifferentConstraint, InSetConstraint
 import csv
+
+vacio = "-"
 
 def cargar_datos(path):
     with open(path, 'r') as file:
@@ -54,26 +56,90 @@ def cargar_datos(path):
 
     return filas, columnas, plazas_conexion, vehiculos
 
+
+
 def resolver_problema(filas, columnas, plazas_conexion, vehiculos):
     problem = Problem()
-
+    
     plazas = [(i, j) for i in range(1, filas + 1) for j in range(1, columnas + 1)]
-    for plaza in plazas:
-        problem.addVariable(plaza, vehiculos)
 
-    # Otras restricciones según las reglas del problema
     for vehiculo in vehiculos:
         vehiculo_id, tipo, congelador = vehiculo.split('-')
-        vehiculo_id = int(vehiculo_id)
+        problem.addVariable(vehiculo_id,plazas)
 
-        # Restricción1: Cada vehículo debe tener asignada una plaza y solo una
-        problem.addConstraint(lambda *plaza_vars, vid=vehiculo_id: plaza_vars.count(f"{vehiculo_id}-{tipo}-{congelador}") <= 1, plazas)
+        # Restricción de conexión eléctrica para vehículos con congelador
+        if congelador=='C':
+            problem.addConstraint(InSetConstraint(plazas_conexion), [vehiculo_id])
 
+        # Restricción para TSU que no puede tener TNU por delante
+        if tipo == 'TSU':  
+            for vehiculo2 in vehiculos:
+                vehiculo2_id, tipo2, _ = vehiculo2.split('-')
+                if tipo2 == 'TNU':
+                    problem.addConstraint(lambda tsu, tnu: tsu[0] != tnu[0] or tsu[1] >= tnu[1], (vehiculo_id, vehiculo2_id))
+
+        # Restricción de maniobrabilidad
+        # Verifica que las plazas a la izquierda y a la derecha estén libres
+        for vehiculo2 in vehiculos:
+                vehiculo2_id, tipo2, _ = vehiculo2.split('-')
+                problem.addConstraint(lambda v1, v2: v1[0]-1!=v2[0]  and v1[0]+1!=v2[0], (vehiculo_id, vehiculo2_id))
+
+    problem.addConstraint(AllDifferentConstraint())
+
+    # Obtener la solución
+    solucion = problem.getSolution()
+
+    print("Solución encontrada:", solucion)
+
+    return solucion
+
+def guardar_solucion(solucion, path_salida, filas, columnas):
+    with open(path_salida, 'w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+
+        # Escribir el número de soluciones encontradas
+        writer.writerow(["N. Sol:", 1])
+
+        # Escribir la ocupación del parking
+        for i in range(1, filas + 1):
+            fila = []
+            for j in range(1, columnas + 1):
+                plaza = (i, j)
+                ocupacion = solucion.get(plaza, vacio)
+                fila.append(ocupacion)
+            writer.writerow(fila)
+            
+if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) != 2:
+        print("Uso: python CSPParking.py <path_parking>")
+        sys.exit(1)
+
+    path_parking = sys.argv[1]
+    filas, columnas, plazas_conexion, vehiculos = cargar_datos(path_parking)
+    # Imprimir los valores obtenidos
+    print(f"Filas: {filas}")
+    print(f"Columnas: {columnas}")
+    print(f"Plazas de Conexión: {plazas_conexion}")
+    print(f"Vehículos: {vehiculos}")
+
+    solucion = resolver_problema(filas, columnas, plazas_conexion, vehiculos)
+
+    if solucion:
+        path_salida = 'exit.csv'
+        guardar_solucion(solucion, path_salida, filas, columnas)
+        print(f"Solución guardada en {path_salida}")
+    else:
+        print("No se encontró una solución.")
+
+    
+        """
         # Restricción3: Vehículos con congelador solo pueden ocupar plazas con conexión a la red eléctrica
         if congelador == 'C':
             for plaza in plazas_conexion:
                 problem.addConstraint(lambda v, p=plaza: v == f"{vehiculo_id}-{tipo}-{congelador}" if p == plaza else True, (plaza,))
-        
+    
         # Restricción4: Un vehículo de tipo TSU no puede tener aparcado por delante a ningún otro vehículo,
         # excepto si este es también de tipo TSU
         if tipo == 'TSU':
@@ -102,52 +168,4 @@ def resolver_problema(filas, columnas, plazas_conexion, vehiculos):
     # Restricción2: No puede haber dos vehículos en la misma plaza
     for plaza in plazas:
         problem.addConstraint(AllDifferentConstraint(), [plaza])
-
-    # Obtener la solución
-    solucion = problem.getSolution()
-
-    print("Solución encontrada:", solucion)
-
-    return solucion
-
-
-
-def guardar_solucion(solucion, path_salida):
-    with open(path_salida, 'w', newline='') as file:
-        writer = csv.writer(file)
-
-        # Escribir el número de soluciones encontradas
-        writer.writerow(["N. Sol:", len(solucion)])
-
-        # Escribir la ocupación del parking
-        for i in range(1, filas + 1):
-            fila = []
-            for j in range(1, columnas + 1):
-                plaza = (i, j)
-                ocupacion = solucion.get(plaza, '−')
-                fila.append(ocupacion)
-            writer.writerow(fila)
-
-if _name_ == "_main_":
-    import sys
-
-    if len(sys.argv) != 2:
-        print("Uso: python CSPParking.py <path_parking>")
-        sys.exit(1)
-
-    path_parking = sys.argv[1]
-    filas, columnas, plazas_conexion, vehiculos = cargar_datos(path_parking)
-    # Imprimir los valores obtenidos
-    print(f"Filas: {filas}")
-    print(f"Columnas: {columnas}")
-    print(f"Plazas de Conexión: {plazas_conexion}")
-    print(f"Vehículos: {vehiculos}")
-
-    solucion = resolver_problema(filas, columnas, plazas_conexion, vehiculos)
-
-    if solucion:
-        path_salida = ('exit.csv')
-        guardar_solucion(solucion, path_salida)
-        print(f"Solución guardada en {path_salida}")
-    else:
-        print("No se encontró una solución.")
+    """

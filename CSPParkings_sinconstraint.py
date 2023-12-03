@@ -50,6 +50,28 @@ class Parking:
                 if i[0] == j.ubicacion_fila and i[1] == j.ubicacion_columna:
                     j.congelador = True
         return
+    
+    def comprobar_restricciones(self):
+        # Restricción: No puede haber más de una plaza con la etiqueta '2-TNU-X'
+        for plaza in self.plazas:
+            if plaza.coche.ubicacion is None:
+                return -1  # Restricción violada
+        contador_etiqueta_2_tnu_x = 0
+
+        for plaza in self.plazas:
+            if plaza.coche.id == '2-TNU-X':
+                contador_etiqueta_2_tnu_x += 1
+
+        if contador_etiqueta_2_tnu_x > 1:
+            return -1  # Restricción violada
+        else:
+            return 0  # Todas las restricciones cumplidas
+    
+    def restriccion_una_plaza(self, *plazas):
+        # Implementa la lógica para verificar la restricción de una plaza por vehículo
+        # Devuelve True si la restricción se cumple, False de lo contrario
+        # Puedes utilizar el método comprobar_restricciones dentro de esta función si es necesario
+        return self.comprobar_restricciones() == 0
 
     def comprobar_parking_asignado(self):
         #1. Todo vehículo tiene que tener asignada una plaza y solo una. Dos coches no pueden tener la misma
