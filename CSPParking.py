@@ -66,7 +66,7 @@ def resolver_problema(filas, columnas, plazas_conexion, vehiculos):
     return soluciones
 
 
-def guardar_soluciones(soluciones, path_salida, filas, columnas):
+def guardar_soluciones(soluciones, path_salida, filas, columnas, num_sol_imp):
     with open(path_salida, 'w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
 
@@ -74,8 +74,8 @@ def guardar_soluciones(soluciones, path_salida, filas, columnas):
         writer.writerow(["N. Sol:", len(soluciones)])
         writer.writerow([ ])
 
-        if len(soluciones) > 2:
-            soluciones = random.sample(soluciones, 2)
+        if len(soluciones) > 2 and num_sol_imp < len(soluciones):
+            soluciones = random.sample(soluciones, num_sol_imp)
         
         for index, solucion in enumerate(soluciones):
             # Escribe una línea indicando la solución actual
@@ -118,7 +118,7 @@ if __name__ == "__main__":
         # Barajar las soluciones para mostrar algunas de forma aleatoria
         random.shuffle(soluciones)
         path_salida = 'exit.csv'
-        guardar_soluciones(soluciones, path_salida, filas, columnas)
+        guardar_soluciones(soluciones, path_salida, filas, columnas, num_sol_imp=3)
         print(f"Soluciones guardadas en {path_salida}")
     else:
         print("No se encontraron soluciones.")
