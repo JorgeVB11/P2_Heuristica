@@ -87,7 +87,7 @@ def guardar_soluciones(soluciones, path_salida, filas, columnas):
             for vehiculo, plaza in solucion.items():
                 info_vehiculo = next((v for v in vehiculos if v.startswith(vehiculo)), None)
                 if info_vehiculo:
-                    parking[plaza[0]-1][plaza[1]-1] = info_vehiculo
+                    parking[plaza[0]-1][plaza[1]-1] = f"{info_vehiculo}"
             
             # Escribir la matriz en el archivo
             for fila in parking:
@@ -122,40 +122,3 @@ if __name__ == "__main__":
         print(f"Soluciones guardadas en {path_salida}")
     else:
         print("No se encontraron soluciones.")
-
-    
-        """
-        # Restricción3: Vehículos con congelador solo pueden ocupar plazas con conexión a la red eléctrica
-        if congelador == 'C':
-            for plaza in plazas_conexion:
-                problem.addConstraint(lambda v, p=plaza: v == f"{vehiculo_id}-{tipo}-{congelador}" if p == plaza else True, (plaza,))
-    
-        # Restricción4: Un vehículo de tipo TSU no puede tener aparcado por delante a ningún otro vehículo,
-        # excepto si este es también de tipo TSU
-        if tipo == 'TSU':
-            for i in range(columnas):
-                for j in range(1, filas):
-                    plaza_actual = (j, i+1)
-                    plaza_delante = (j+1, i+1)
-
-                    problem.addConstraint(lambda v1, v2, t=tipo: (v1 != f"{vehiculo_id}-{t}" or v2 != f"{vehiculo_id}-{t}") if (v1, v2) == (plaza_actual, plaza_delante) else True, (plaza_actual, plaza_delante))
-
-        # Restricción5: Todo vehículo debe tener libre una plaza a izquierda o derecha
-        for i in range(1, filas + 1):
-            for j in range(1, columnas + 1):
-                plaza_actual = (i, j)
-
-                # Asegurarse de que la plaza_izquierda esté dentro del rango
-                if j > 1:
-                    plaza_izquierda = (i, j - 1)
-                    problem.addConstraint(lambda v1, v2: (v1 != f"{vehiculo_id}-{tipo}-{congelador}" or v2 != f"{vehiculo_id}-{tipo}-{congelador}") if (v1, v2) == (plaza_actual, plaza_izquierda) else True, (plaza_actual, plaza_izquierda))
-
-                # Asegurarse de que la plaza_derecha esté dentro del rango
-                if j < columnas:
-                    plaza_derecha = (i, j + 1)
-                    problem.addConstraint(lambda v1, v2: (v1 != f"{vehiculo_id}-{tipo}-{congelador}" or v2 != f"{vehiculo_id}-{tipo}-{congelador}") if (v1, v2) == (plaza_actual, plaza_derecha) else True, (plaza_actual, plaza_derecha))
-
-    # Restricción2: No puede haber dos vehículos en la misma plaza
-    for plaza in plazas:
-        problem.addConstraint(AllDifferentConstraint(), [plaza])
-    """
