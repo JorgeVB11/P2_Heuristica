@@ -143,7 +143,6 @@ def transition(state, action):
     if action_type == 'MOVE':
         # Obtener el nuevo estado después de realizar un movimiento
         new_location = (state['current_location'][0] + action_value[0], state['current_location'][1] + action_value[1])
-
         # Verificar si la nueva ubicación está dentro de los límites del mapa y no es un obstáculo
         if (
             0 <= new_location[0] < map_info['rows'] and
