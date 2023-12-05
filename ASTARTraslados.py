@@ -60,7 +60,7 @@ def a_star(initial_state, heuristic_func, goal_test_func, actions_func, transiti
     while frontier:
         current_cost, current_state, current_path = heapq.heappop(frontier)
 
-        if goal_test_func(current_state, map_info['patient_locations'], map_info['parking_location']):
+        if goal_test_func(current_state, map_info):
             return current_state, current_path, total_cost  # o cualquier otra cosa que necesites
 
         explored.add(tuple(current_state))
@@ -90,9 +90,14 @@ def heuristic(state, map_info):
     return total_distance
 
 
-def goal_test(state, patient_locations, ambulance_parking):
+def goal_test(state, map_info):
     # Verificar si todos los pacientes están en sus centros de atención y la ambulancia está en el estacionamiento
-    return all(patient in state['treatment_centers'].values() for patient in patient_locations) and state['current_location'] == ambulance_parking
+    contagious_patients_in_contagious_center = all(patient in state['treatment_centers']['CC'] for patient in map_info['contagious_locations'])
+    non_contagious_patients_in_non_contagious_center = all(patient in state['treatment_centers']['CN'] for patient in map_info['patient_locations'] if patient not in map_info['contagious_locations'])
+    ambulance_at_parking = state['current_location'] == map_info['parking_location']
+
+    return contagious_patients_in_contagious_center and non_contagious_patients_in_non_contagious_center and ambulance_at_parking
+
 
 
 def actions(state):
@@ -114,35 +119,69 @@ def actions(state):
                 0 <= new_location[1] < map_info['cols'] and
                 new_location not in map_info['obstacles']
             ):
-                possible_actions.append(move)
+                # Verificar si hay pacientes en la nueva ubicación y recogerlos si es posible
+                patients_to_pickup = [patient for patient in map_info['patient_locations'] if patient == new_location]
+                if patients_to_pickup:
+                    # Crear una acción que recoja a los pacientes en la nueva ubicación
+                    pickup_action = ('PICKUP', patients_to_pickup)
+                    possible_actions.append(pickup_action)
+
+                # Agregar el movimiento como una acción
+                move_action = ('MOVE', move)
+                possible_actions.append(move_action)
 
         return possible_actions
+    
     else:
         # Manejar el caso en el que 'current_location' no está presente en el estado
         print("Error: 'current_location' no está presente en el estado.")
 
-def transition(state, action):
-    # Obtener el nuevo estado después de realizar una acción
-    new_location = (state['current_location'][0] + action[0], state['current_location'][1] + action[1])
 
-    # Verificar si la nueva ubicación está dentro de los límites del mapa y no es un obstáculo
-    if (
-        0 <= new_location[0] < map_info['rows'] and
-        0 <= new_location[1] < map_info['cols'] and
-        new_location not in map_info['obstacles']
-    ):
-        # Crear una copia del estado actual y actualizar la ubicación de la ambulancia
+def transition(state, action):
+    action_type, action_value = action
+
+    if action_type == 'MOVE':
+        # Obtener el nuevo estado después de realizar un movimiento
+        new_location = (state['current_location'][0] + action_value[0], state['current_location'][1] + action_value[1])
+
+        # Verificar si la nueva ubicación está dentro de los límites del mapa y no es un obstáculo
+        if (
+            0 <= new_location[0] < map_info['rows'] and
+            0 <= new_location[1] < map_info['cols'] and
+            new_location not in map_info['obstacles']
+        ):
+            # Crear una copia del estado actual y actualizar la ubicación de la ambulancia
+            new_state = state.copy()
+            new_state['current_location'] = new_location
+
+            return new_state
+        else:
+            # Si la nueva ubicación no es válida, devolver el estado actual sin cambios
+            return state
+    elif action_type == 'PICKUP':
+        # Manejar la acción de recoger pacientes
         new_state = state.copy()
-        new_state['current_location'] = new_location
+
+        # Remover a los pacientes recogidos de las ubicaciones de pacientes
+        for patient in action_value:
+            if patient in new_state['patient_locations']:
+                new_state['patient_locations'].remove(patient)
+
+        # Actualizar el estado de la ambulancia (puedes ajustar según tus necesidades)
+        new_state['ambulance_state'] = 'PICKING_UP'
 
         return new_state
     else:
-        # Si la nueva ubicación no es válida, devolver el estado actual sin cambios
+        # Manejar otros tipos de acciones según sea necesario
         return state
+
 
 def cost(state, action, map_info):
     # Obtener la ubicación después de realizar la acción
-    new_location = (state['current_location'][0] + action[0], state['current_location'][1] + action[1])
+    new_location = (
+    state['current_location'][0] + action[1][0],
+    state['current_location'][1] + action[1][1]
+    )
 
     # Verificar si la nueva ubicación está dentro de los límites del mapa y no es un obstáculo
     if (
