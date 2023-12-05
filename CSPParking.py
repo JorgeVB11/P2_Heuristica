@@ -87,7 +87,7 @@ def guardar_soluciones(soluciones, path_salida, filas, columnas):
             for vehiculo, plaza in solucion.items():
                 info_vehiculo = next((v for v in vehiculos if v.startswith(vehiculo)), None)
                 if info_vehiculo:
-                    parking[plaza[0]-1][plaza[1]-1] = info_vehiculo
+                    parking[plaza[0]-1][plaza[1]-1] = f"{info_vehiculo}"
             
             # Escribir la matriz en el archivo
             for fila in parking:
