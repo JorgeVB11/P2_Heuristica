@@ -24,11 +24,12 @@ def restriccion_v1(v1, v2, v3):
                     if v1[0] == 1:  # en la primera fila
                          if (v1[0] + 1 == v2[0] and v1[1]==v2[1]) or (v1[0] + 1 == v3[0] and v1[1]==v3[1]):  # no tiene un vehículo adyacente a la derecha
                             return False
-                    if v1[0] == filas:  # en la ultima fila
+                    elif v1[0] == filas:  # en la ultima fila
                          if (v1[0] - 1 == v2[0] and v1[1]==v2[1]) or (v1[0] - 1 == v3[0] and v1[1]==v3[1]):  # no tiene un vehículo adyacente a la izquierda
                             return False
-                    if abs(v1[0] - v2[0]) == 1 and abs(v1[0] - v3[0]) == 1 and v1[1]==v2[1]==v3[1]: #no puede tener uno a la izquierda y a la derecha a la vez
-                            return False
+                    else:
+                        if (v1[0] + 1 == v2[0] and v1[1] == v2[1]) and (v1[0] - 1 == v3[0] and v1[1] == v3[1]): #no puede tener uno a la izquierda y a la derecha a la vez
+                                return False
                     return True
 
 def resolver_problema(filas, columnas, plazas_conexion, vehiculos):
