@@ -52,38 +52,28 @@ map_str = 'mapa.csv'
 map_info = parse_map(map_str)
 print(map_info)
 
-def convert_to_hashable(obj):
-    if isinstance(obj, list):
-        return tuple(convert_to_hashable(item) for item in obj)
-    elif isinstance(obj, set):
-        return frozenset(convert_to_hashable(item) for item in obj)
-    elif isinstance(obj, dict):
-        return tuple(sorted((key, convert_to_hashable(value)) for key, value in obj.items()))
-    else:
-        return obj
 
 def a_star(initial_state, heuristic_func, goal_test_func, actions_func, transition_func, cost_func):
-    frontier = [(0, initial_state)]
+    frontier = [(0, initial_state, [initial_state])]
     explored = set()
     map_info = parse_map(map_str)
     while frontier:
-        current_cost, current_state = heapq.heappop(frontier)
+        current_cost, current_state, current_path = heapq.heappop(frontier)
 
         if goal_test_func(current_state, map_info['patient_locations'], map_info['parking_location']):
-            return current_state  # o cualquier otra cosa que necesites
+            return current_state, current_path, total_cost  # o cualquier otra cosa que necesites
 
-        explored.add(convert_to_hashable(current_state))
+        explored.add(tuple(current_state))
 
         for action in actions_func(current_state):
             new_state = transition_func(current_state, action)
-            if convert_to_hashable(new_state) not in explored:
-                new_cost = current_cost + cost_func(current_state, action, map_info)
-                total_cost = new_cost + heuristic_func(new_state, map_info)
-                heapq.heappush(frontier, (total_cost, new_state))
+            new_cost = current_cost + cost_func(current_state, action, map_info)
+            total_cost = new_cost + heuristic_func(new_state, map_info)
+            new_path = current_path + [new_state]  # Actualiza el camino recorrido
+            if tuple(new_state) not in explored:
+                heapq.heappush(frontier, (total_cost, new_state, new_path))
 
     return None  # Si no se encuentra una solución
-
-
 
 
 
@@ -181,7 +171,7 @@ def cost(state, action, map_info):
         return float('inf')
 
 # Luego, puedes llamar al algoritmo A* con tus funciones específicas
-initial_state = map_info
+initial_state = map_info.copy()
 solution = a_star(initial_state, heuristic, goal_test, actions, transition, cost)
 
 print("Solución encontrada:", solution)
