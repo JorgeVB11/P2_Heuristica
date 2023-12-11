@@ -417,7 +417,7 @@ def parse_map(map_str):
     }
 # Ejemplo de uso
 map_info = parse_map('mapa.csv')
-resultado = traslado_pacientes(map_info['mapa'], map_info['current_location'], map_info['patients_locations'],map_info['contagious_locations'],
+resultado = traslado_pacientes(map_info['mapa'], map_info['current_location'], map_info['patient_locations'],map_info['contagious_locations'],
                                map_info['non_contagious_locations'],map_info['treatment_centers_cc'],map_info['treatment_centers_cn'])
 if resultado is None:
     print("No existe solución")
