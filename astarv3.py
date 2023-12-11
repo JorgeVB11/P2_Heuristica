@@ -357,22 +357,58 @@ def obtener_costo_energia(mapa, posicion, camino):
             coste+=0
     print(coste)
     return coste
+
+
+def parse_map(map_str):
+    with open(map_str, 'r') as archivo:
+        lines = archivo.readlines()
+    rows = len(lines)
+    cols = len(lines[0].split(';'))
+
+    map_data = []
+    for line in lines:
+        cells = line.strip().split(';')
+        map_data.append(cells)
+
+    patient_locations = []
+    contagious_locations = []
+    treatment_centers = {'CC': set(), 'CN': set()}
+    parking_location = None
+    obstacles = set()
+
+    for i, line in enumerate(lines):
+        cells = line.strip().split(';')
+        for j, cell in enumerate(cells):
+            if cell == 'N':
+                patient_locations.append((i, j))
+            elif cell == 'C':
+                patient_locations.append((i, j))
+                contagious_locations.append((i, j))
+            elif cell == 'CC':
+                treatment_centers['CC'].add((i, j))
+            elif cell == 'CN':
+                treatment_centers['CN'].add((i, j))
+            elif cell == 'P':
+                parking_location = (i, j)
+            elif cell == 'X':
+                obstacles.add((i, j))
+
+    return {
+        'rows': rows,
+        'cols': cols,
+        'map': map_data,
+        'patient_locations': patient_locations,
+        'contagious_locations': contagious_locations,
+        'treatment_centers': treatment_centers,
+        'parking_location': parking_location,
+        'obstacles': obstacles,
+        'current_energy': 50,
+        'ambulance': [],
+        'current_location': parking_location
+    }
 # Ejemplo de uso
-mapa_ejemplo = [
-    ['P', 'N', '1', 'C'],
-    ['2', 'X', 'CC', 'N'],
-    ['C', '3', '1', 'CN'],
-    ['N', 'X', 'C', 'X']
-]
-
-inicio_ambulancia = (0, 0)
-pacientes_a_recoger = [(0,3),(2,0),(3,2),(0,1),(1,3),(3,0)]
-pacientes_contagiosos =[(0,3),(2,0),(3,2)]
-pacientes_no_contagiosos=[(0,1),(1,3),(3,0)]
-CN=(2,3)
-CC=(1,2)
-
-resultado = traslado_pacientes(mapa_ejemplo, inicio_ambulancia, pacientes_a_recoger,pacientes_contagiosos,pacientes_no_contagiosos,CC,CN)
+map_info = parse_map('mapa.csv')
+resultado = traslado_pacientes(mapa_ejemplo, map_info['current_location'], map_info['patients_locations'],map_info['contagious_locations'],pacientes_no_contagiosos,map_info[''],CN)
 if resultado is None:
     print("No existe solución")
 print("Resultado del traslado:", resultado) 
