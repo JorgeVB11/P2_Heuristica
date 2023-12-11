@@ -372,34 +372,43 @@ def parse_map(map_str):
 
     patient_locations = []
     contagious_locations = []
-    treatment_centers = {'CC': set(), 'CN': set()}
+    non_contagious_locations = []
+    mapa = []
+    treatment_centers_cc = set()
+    treatment_centers_cn = set()
     parking_location = None
     obstacles = set()
 
     for i, line in enumerate(lines):
         cells = line.strip().split(';')
+        mapa.append([])
         for j, cell in enumerate(cells):
+            mapa[i].append(cell)
             if cell == 'N':
                 patient_locations.append((i, j))
+                non_contagious_locations.append((i,j))
             elif cell == 'C':
                 patient_locations.append((i, j))
                 contagious_locations.append((i, j))
             elif cell == 'CC':
-                treatment_centers['CC'].add((i, j))
+                treatment_centers_cc.add((i, j))
             elif cell == 'CN':
-                treatment_centers['CN'].add((i, j))
+                treatment_centers_cn.add((i, j))
             elif cell == 'P':
                 parking_location = (i, j)
             elif cell == 'X':
                 obstacles.add((i, j))
 
     return {
+        'mapa':mapa,
         'rows': rows,
         'cols': cols,
         'map': map_data,
         'patient_locations': patient_locations,
         'contagious_locations': contagious_locations,
-        'treatment_centers': treatment_centers,
+        'non_contagious_locations': non_contagious_locations,
+        'treatment_centers_cc': treatment_centers_cc,
+        'treatment_centers_cn': treatment_centers_cn,
         'parking_location': parking_location,
         'obstacles': obstacles,
         'current_energy': 50,
@@ -408,7 +417,8 @@ def parse_map(map_str):
     }
 # Ejemplo de uso
 map_info = parse_map('mapa.csv')
-resultado = traslado_pacientes(mapa_ejemplo, map_info['current_location'], map_info['patients_locations'],map_info['contagious_locations'],pacientes_no_contagiosos,map_info[''],CN)
+resultado = traslado_pacientes(map_info['mapa'], map_info['current_location'], map_info['patients_locations'],map_info['contagious_locations'],
+                               map_info['non_contagious_locations'],map_info['treatment_centers_cc'],map_info['treatment_centers_cn'])
 if resultado is None:
     print("No existe solución")
 print("Resultado del traslado:", resultado) 
