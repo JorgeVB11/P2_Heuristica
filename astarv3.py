@@ -1,4 +1,5 @@
 import heapq
+import time
 
 # Encontrar la posición de inicial en el mapa en caso de haber dos parkings coge la primera P y si no hay comienza en el (0,0)
 def lugar_inicio(mapa):
@@ -422,9 +423,30 @@ def imprimir_solucion(mapa, camino,estado_actual):
         else:
             carga_ambulancia-=1
         formato = f"({fila},{columna}):{valor_celda}:{carga_ambulancia}"
-        print(formato)
+        #abrimos el archivo .output con permisos 'a' que quiere decir añadir y acumulamos por donde pasa la ambulancia
+        with open('ASTAR-test/mapa-1.output', 'a') as archivo:
+           archivo.write(str(formato) + '\n')
 
-
+def calcular_stats(tiempo, dir_output, dir_stats):
+    coste_total = 0
+    longitud_plan = 0
+    nodos_expandidos = 32
+    with open(dir_output, 'r') as archivo:
+        for linea in archivo:
+            elementos = linea.split(':')
+            valor = elementos[1]
+            if valor in ["CC", "CN","C","N"]:
+                coste_total += 1
+            elif valor == "P":
+                pass
+            else:
+                coste_total += int(valor)
+            longitud_plan +=1
+    with open(dir_stats, 'a') as archivo:
+           archivo.write('Tiempo total: ' + str(tiempo) + '\n')
+           archivo.write('Coste total: ' + str(coste_total) + '\n')
+           archivo.write('Longitud del plan: ' + str(longitud_plan) + '\n')
+           archivo.write('Nodos expandidos: ' + str(nodos_expandidos) + '\n')
 def actualizar_mapa(mapa,estado_actual):
     fila, columna = estado_actual['posicion_ambulancia']
     mapa[fila][columna]="1"
@@ -433,9 +455,17 @@ def actualizar_mapa(mapa,estado_actual):
 # Ejemplo de uso
 map_info = parse_map('mapa.csv')
 empieza=True
+start_time = time.time()
+with open("ASTAR-test/mapa-1.output", 'w') as archivo:
+    archivo.write('')
+with open("ASTAR-test/mapa-1.stat", 'w') as archivo:
+    archivo.write('')
 resultado,camino_seguido = traslado_pacientes(map_info['mapa'], map_info['current_location'], map_info['patient_locations'],map_info['contagious_locations'],
                                map_info['non_contagious_locations'],map_info['treatment_centers_cc'][0],map_info['treatment_centers_cn'][0],empieza)
-
+end_time = time.time()
+total_time = end_time - start_time
+calcular_stats(total_time, "ASTAR-test/mapa-1.output","ASTAR-test/mapa-1.stat")
+total_time = end_time - start_time
 if resultado is None:
     print("No existe solución")
 print("Resultado del traslado:", resultado)
