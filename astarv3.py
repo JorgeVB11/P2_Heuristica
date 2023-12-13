@@ -430,7 +430,7 @@ def imprimir_solucion(mapa, camino,estado_actual):
 def calcular_stats(tiempo, dir_output, dir_stats):
     coste_total = 0
     longitud_plan = 0
-    nodos_expandidos = 32
+    nodos_expandidos = 0
     with open(dir_output, 'r') as archivo:
         for linea in archivo:
             elementos = linea.split(':')
