@@ -94,7 +94,7 @@ def recoger_paciente(mapa, estado_actual, paciente, caminos_a_pacientes,camino_t
         try:
             ir_recargar_parking(mapa,estado_actual,camino_total)
         except Exception as e:
-            print(f"No se pudoir al parking: {e}")
+            print(f"No se pudo ir al parking: {e}")
             return None
 
 def recoger_paciente_contagioso(mapa, estado_actual, paciente, caminos_a_pacientes,CC,camino_total,start):
@@ -129,7 +129,7 @@ def recoger_paciente_contagioso(mapa, estado_actual, paciente, caminos_a_pacient
             try:
                 ir_recargar_parking(mapa,estado_actual,camino_total)
             except Exception as e:
-                print(f"No se pudoir al parking: {e}")
+                print(f"No se pudo ir al parking: {e}")
                 return None
 
 
@@ -158,7 +158,7 @@ def ir_a_centro(mapa, estado_actual, centro, X,camino_total,start):
         try:
             ir_recargar_parking(mapa,estado_actual,camino_total)
         except Exception as e:
-            print(f"No se pudoir al parking: {e}")
+            print(f"No se pudo ir al parking: {e}")
             return None
 
 def ir_recargar_parking(mapa,estado_actual,camino_total):
@@ -390,6 +390,12 @@ def parse_map(map_str):
                 parking_location = (i, j)
             elif cell == 'X':
                 obstacles.add((i, j))
+            else:
+                if not cell.isdigit():
+                    print("Error, revisa tu mapa debes tener elementos inválidos")
+                    return
+
+                
 
     return {
         'mapa':mapa,

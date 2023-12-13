@@ -2,3 +2,6 @@
 PE:(1,1)(1,2)
 1-TSU-C
 2-TNU-X
+3-TSU-C
+4-TNU-X
+5-TNU-C
