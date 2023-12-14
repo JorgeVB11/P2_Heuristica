@@ -1,5 +1,6 @@
 import heapq
 import time
+import sys
 # Encontrar la posición de inicial en el mapa en caso de haber dos parkings coge la primera P y si no hay comienza en el (0,0)
 def lugar_inicio(mapa):
     for i in range(len(mapa)):
@@ -456,19 +457,30 @@ def actualizar_mapa(mapa,estado_actual):
 
 
 # Ejemplo de uso
-map_info = parse_map('mapa.csv')
-empieza=True
-start_time = time.time()
-with open("ASTAR-test/mapa-1.output", 'w') as archivo:
-    archivo.write('')
-with open("ASTAR-test/mapa-1.stat", 'w') as archivo:
-    archivo.write('')
-resultado,camino_seguido = traslado_pacientes(map_info['mapa'], map_info['current_location'], map_info['patient_locations'],map_info['contagious_locations'],
-                               map_info['non_contagious_locations'],map_info['treatment_centers_cc'],map_info['treatment_centers_cn'],empieza)
-end_time = time.time()
-total_time = end_time - start_time
-calcular_stats(total_time, "ASTAR-test/mapa-1.output","ASTAR-test/mapa-1.stat")
-total_time = end_time - start_time
-if resultado is None:
-    print("No existe solución")
-print("Resultado del traslado:", resultado)
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        #print("Uso: python ASTARTraslados.py <path mapa.csv> <num-h>")
+        sys.exit(1)
+    #print("primer")
+    file_path = sys.argv[1]
+    num_h = int(sys.argv[2])  
+    map_info = parse_map(file_path)
+    empieza=True
+    n_mapa = file_path.split('.')
+    output = 'ASTAR-test/' + n_mapa[0]+".output"
+    stat = 'ASTAR-test/' + n_mapa[0]+".stat"
+    with open(output, 'w') as archivo:
+        archivo.write('')
+    with open(stat, 'w') as archivo:
+        archivo.write('')
+    start_time = time.time()
+    resultado,camino_seguido = traslado_pacientes(map_info['mapa'], map_info['current_location'], map_info['patient_locations'],map_info['contagious_locations'],
+                                map_info['non_contagious_locations'],map_info['treatment_centers_cc'],map_info['treatment_centers_cn'],empieza)
+    end_time = time.time()
+    total_time = end_time - start_time
+    calcular_stats(total_time, "ASTAR-test/mapa-1.output","ASTAR-test/mapa-1.stat")
+    total_time = end_time - start_time
+    if resultado is None:
+        print("No existe solución")
+    print("Resultado del traslado:", resultado)
+
