@@ -10,15 +10,26 @@ def lugar_inicio(mapa):
                 return inicio
     print("No hay parkings en el mapa")
     return None
+def heuristica(pos_actual, pos_final, n):
+        if n == 1: #heuristica manhattan
+            x1, y1 = pos_actual
+            x2, y2 = pos_final
+            distancia_manhattan = abs(x1 - x2) + abs(y1 - y2)
+            return distancia_manhattan
+        if n == 2: #heuristica chebyshev
+            x1, y1 = pos_actual
+            x2, y2 = pos_final
+            distancia_chebyshev = max(abs(x1 - x2), abs(y1 - y2))
+            return distancia_chebyshev
 
-
-def a_star_search(mapa,inicio,destino):
+def a_star_search(mapa,inicio,destino, n, n_nodos_expandidos):
     # Definir las direcciones posibles: arriba, abajo, izquierda, derecha
-    direcciones = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-
-    def heuristica(pos_actual, pos_final):
-        # Heurística de distancia Manhattan
-        return 1
+    if n == 2:
+        direcciones = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1,-1), (1,1), (-1,1), (1,-1)]
+    else:
+        direcciones = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    
+    
 
     def obtener_sucesores(pos_actual):
         sucesores = []
@@ -32,7 +43,7 @@ def a_star_search(mapa,inicio,destino):
     ABIERTA = []
     CERRADA = set()
 
-    nodo_inicial = (heuristica(inicio, destino), 0, inicio, [])
+    nodo_inicial = (heuristica(inicio, destino, n), 0, inicio, [])
     heapq.heappush(ABIERTA, nodo_inicial)
 
     # Inicializar variables adicionales
@@ -45,11 +56,13 @@ def a_star_search(mapa,inicio,destino):
             EXITO = True
         else:
             CERRADA.add(pos_actual)
+            N_NODOS_EXPANDIDOSS += 1
+            print("Mis_nodos_expandidos", n_nodos_expandidos)
             sucesores = obtener_sucesores(pos_actual)
             for sucesor in sucesores:
                 if sucesor not in CERRADA:
                     nuevo_costo = costo + 1  # Suponemos que cada movimiento tiene un costo de 1
-                    nuevo_nodo = (heuristica(sucesor, destino) + nuevo_costo, nuevo_costo, sucesor, camino + [pos_actual])
+                    nuevo_nodo = (heuristica(sucesor, destino, n) + nuevo_costo, nuevo_costo, sucesor, camino + [pos_actual])
                     if sucesor not in (nodo[2] for nodo in ABIERTA):
                         heapq.heappush(ABIERTA, nuevo_nodo)
                     else:
@@ -63,19 +76,19 @@ def a_star_search(mapa,inicio,destino):
     else:
         return None
     
-def buscar_camino_a_todos(mapa, posicion_ambulancia, pacientes_por_recoger):
+def buscar_camino_a_todos(mapa, posicion_ambulancia, pacientes_por_recoger, n, n_nodos_expandidos):
     caminos = {}
 
     for paciente in pacientes_por_recoger:
-        camino = a_star_search(mapa, posicion_ambulancia, paciente)
+        camino = a_star_search(mapa, posicion_ambulancia, paciente, n, n_nodos_expandidos)
         caminos[paciente] = camino
     caminos = {paciente: camino for paciente, camino in caminos.items() if camino is not None}
     return caminos
 
-def recoger_paciente(mapa, estado_actual, paciente, caminos_a_pacientes,camino_total,start):
+def recoger_paciente(mapa, estado_actual, paciente, caminos_a_pacientes,camino_total,start, n, n_nodos_expandidos):
     camino = caminos_a_pacientes[paciente]
     costo_energia = obtener_costo_energia(mapa, estado_actual['posicion_ambulancia'], camino,start)
-    costo_ir_a_parking = obtener_costo_energia(mapa, camino[-1], a_star_search(mapa, camino[-1], lugar_inicio(mapa)),start)
+    costo_ir_a_parking = obtener_costo_energia(mapa, camino[-1], a_star_search(mapa, camino[-1], lugar_inicio(mapa), n, n_nodos_expandidos),start)
     if costo_energia+costo_ir_a_parking <= estado_actual['energia']:
         imprimir_solucion(mapa, camino,estado_actual)
         estado_actual['energia'] -= costo_energia
@@ -92,15 +105,15 @@ def recoger_paciente(mapa, estado_actual, paciente, caminos_a_pacientes,camino_t
     else:
         # Ir al parking para recargar
         try:
-            ir_recargar_parking(mapa,estado_actual,camino_total)
+            ir_recargar_parking(mapa,estado_actual,camino_total, n, n_nodos_expandidos)
         except Exception as e:
             print(f"No se pudoir al parking: {e}")
             return None
 
-def recoger_paciente_contagioso(mapa, estado_actual, paciente, caminos_a_pacientes,CC,camino_total,start):
+def recoger_paciente_contagioso(mapa, estado_actual, paciente, caminos_a_pacientes,CC,camino_total,start, n, n_nodos_expandidos):
         camino = caminos_a_pacientes[paciente]
         costo_energia = obtener_costo_energia(mapa, estado_actual['posicion_ambulancia'], camino,start)
-        costo_ir_a_parking = obtener_costo_energia(mapa, camino[-1], a_star_search(mapa, camino[-1], lugar_inicio(mapa)),start)
+        costo_ir_a_parking = obtener_costo_energia(mapa, camino[-1], a_star_search(mapa, camino[-1], lugar_inicio(mapa), n, n_nodos_expandidos),start)
         if costo_energia+costo_ir_a_parking <= estado_actual['energia']:
             imprimir_solucion(mapa, camino,estado_actual)
             estado_actual['energia'] -= costo_energia
@@ -127,16 +140,16 @@ def recoger_paciente_contagioso(mapa, estado_actual, paciente, caminos_a_pacient
         else:
             # Ir al parking para recargar
             try:
-                ir_recargar_parking(mapa,estado_actual,camino_total)
+                ir_recargar_parking(mapa,estado_actual,camino_total, n, n_nodos_expandidos)
             except Exception as e:
                 print(f"No se pudoir al parking: {e}")
                 return None
 
 
-def ir_a_centro(mapa, estado_actual, centro, X,camino_total,start):
-    camino = a_star_search(mapa, estado_actual['posicion_ambulancia'], centro)
+def ir_a_centro(mapa, estado_actual, centro, X,camino_total,start, n, n_nodos_expandidos):
+    camino = a_star_search(mapa, estado_actual['posicion_ambulancia'], centro, n, n_nodos_expandidos)
     costo_energia = obtener_costo_energia(mapa, estado_actual['posicion_ambulancia'], camino,start)
-    costo_ir_a_parking = obtener_costo_energia(mapa, camino[-1], a_star_search(mapa, camino[-1], lugar_inicio(mapa)),start)
+    costo_ir_a_parking = obtener_costo_energia(mapa, camino[-1], a_star_search(mapa, camino[-1], lugar_inicio(mapa), n, n_nodos_expandidos),start)
     if costo_energia+costo_ir_a_parking <= estado_actual['energia']:
         imprimir_solucion(mapa, camino,estado_actual)
         estado_actual['energia'] -= costo_energia
@@ -156,13 +169,13 @@ def ir_a_centro(mapa, estado_actual, centro, X,camino_total,start):
     else:
         # Ir al parking para recargar
         try:
-            ir_recargar_parking(mapa,estado_actual,camino_total)
+            ir_recargar_parking(mapa,estado_actual,camino_total, n, n_nodos_expandidos)
         except Exception as e:
             print(f"No se pudoir al parking: {e}")
             return None
 
-def ir_recargar_parking(mapa,estado_actual,camino_total):
-    camino_a_parking = a_star_search(mapa, estado_actual['posicion_ambulancia'], lugar_inicio(mapa))
+def ir_recargar_parking(mapa,estado_actual,camino_total, n, n_nodos_expandidos):
+    camino_a_parking = a_star_search(mapa, estado_actual['posicion_ambulancia'], lugar_inicio(mapa), n, n_nodos_expandidos)
     camino_a_parking.remove(estado_actual['posicion_ambulancia'])
     if camino_a_parking is not None:
         imprimir_solucion(mapa, camino_a_parking,estado_actual)
@@ -172,7 +185,7 @@ def ir_recargar_parking(mapa,estado_actual,camino_total):
     else:
         raise Exception("No se pudo encontrar un camino al parking para recargar")
     
-def traslado_pacientes(mapa, inicio_ambulancia, pacientes,pacientes_CC,pacientes_CN,CC,CN,start):
+def traslado_pacientes(mapa, inicio_ambulancia, pacientes,pacientes_CC,pacientes_CN,CC,CN,start, n, n_nodos_expandidos):
     # Estado Inicial
     estado_actual = {
         'posicion_ambulancia': inicio_ambulancia,
@@ -206,13 +219,13 @@ def traslado_pacientes(mapa, inicio_ambulancia, pacientes,pacientes_CC,pacientes
     while not son_estados_iguales(estado_actual, estado_objetivo):
 
         if len(estado_actual['espacio_ambulancia'])==0 and estado_actual['pacientes_por_recoger']:
-            caminos_a_pacientes = buscar_camino_a_todos(mapa, estado_actual['posicion_ambulancia'], estado_actual['pacientes_por_recoger'])
+            caminos_a_pacientes = buscar_camino_a_todos(mapa, estado_actual['posicion_ambulancia'], estado_actual['pacientes_por_recoger'], n, n_nodos_expandidos)
 
             # Asegurémonos de que haya caminos disponibles
             if all(caminos_a_pacientes.get(paciente) is not None and None not in caminos_a_pacientes[paciente] for paciente in estado_actual['pacientes_por_recoger']):
                 paciente_mas_cercano = min(estado_actual['pacientes_por_recoger'], key=lambda paciente: len(caminos_a_pacientes[paciente]))
                 try:
-                    recoger_paciente(mapa, estado_actual, paciente_mas_cercano, caminos_a_pacientes,camino_total,start)
+                    recoger_paciente(mapa, estado_actual, paciente_mas_cercano, caminos_a_pacientes,camino_total,start, n, n_nodos_expandidos)
                     start=False
                 except Exception as e:
                     print(f"No se pudo recoger al paciente: {e}")
@@ -225,11 +238,11 @@ def traslado_pacientes(mapa, inicio_ambulancia, pacientes,pacientes_CC,pacientes
             if estado_actual['espacio_ambulancia'].count("C")<2: #tenemos al menos un paciente contagioso más que se pueda recoger
                 if estado_actual['posicion_ambulancia'] in estado_actual["pacientes_contagiosos_por_recoger"]:
                     estado_actual["pacientes_contagiosos_por_recoger"].remove(estado_actual['posicion_ambulancia'])
-                caminos_a_pacientes = buscar_camino_a_todos(mapa, estado_actual['posicion_ambulancia'],estado_actual["pacientes_contagiosos_por_recoger"]+CC)
+                caminos_a_pacientes = buscar_camino_a_todos(mapa, estado_actual['posicion_ambulancia'],estado_actual["pacientes_contagiosos_por_recoger"]+CC, n, n_nodos_expandidos)
                 if all(caminos_a_pacientes.get(paciente) is not None and None not in caminos_a_pacientes[paciente] for paciente in estado_actual['pacientes_contagiosos_por_recoger'] + CC):
                     paciente_mas_cercano = min(estado_actual['pacientes_contagiosos_por_recoger']+CC, key=lambda paciente: len(caminos_a_pacientes[paciente]))
                     try:
-                        recoger_paciente_contagioso(mapa, estado_actual, paciente_mas_cercano, caminos_a_pacientes,CC,camino_total,start)
+                        recoger_paciente_contagioso(mapa, estado_actual, paciente_mas_cercano, caminos_a_pacientes,CC,camino_total,start, n, n_nodos_expandidos)
                     except Exception as e:
                         print(f"No se pudo acceder a: {e}")
                         return None
@@ -241,10 +254,10 @@ def traslado_pacientes(mapa, inicio_ambulancia, pacientes,pacientes_CC,pacientes
                 if estado_actual['posicion_ambulancia'] in estado_actual["pacientes_contagiosos_por_recoger"]:
                     estado_actual["pacientes_contagiosos_por_recoger"].remove(estado_actual['posicion_ambulancia'])
                     estado_actual["pacientes_por_recoger"].remove(estado_actual['posicion_ambulancia'])
-                caminos_a_centros =buscar_camino_a_todos(mapa, estado_actual['posicion_ambulancia'],CC)
+                caminos_a_centros =buscar_camino_a_todos(mapa, estado_actual['posicion_ambulancia'],CC, n, n_nodos_expandidos)
                 centro_mas_cercano = min(CC, key=lambda paciente: len(caminos_a_centros[paciente]))
                 try:
-                    ir_a_centro(mapa, estado_actual, centro_mas_cercano, "C",camino_total,start)
+                    ir_a_centro(mapa, estado_actual, centro_mas_cercano, "C",camino_total,start, n, n_nodos_expandidos)
                 except Exception as e:
                     print(f"No se pudo acceder a: {e}")
                     return None
@@ -253,19 +266,19 @@ def traslado_pacientes(mapa, inicio_ambulancia, pacientes,pacientes_CC,pacientes
             if estado_actual['posicion_ambulancia']!=CC and estado_actual['posicion_ambulancia']!=CN and estado_actual['posicion_ambulancia'] in estado_actual["pacientes_no_contagiosos_por_recoger"]:
                 estado_actual["pacientes_no_contagiosos_por_recoger"].remove(estado_actual['posicion_ambulancia'])
             if  len(estado_actual['espacio_ambulancia']) < 9: #si no esta llena la ambulancia busca a otro paciente o va a CN
-                caminos_a_pacientes = buscar_camino_a_todos(mapa, estado_actual['posicion_ambulancia'],estado_actual["pacientes_por_recoger"]+CN)
+                caminos_a_pacientes = buscar_camino_a_todos(mapa, estado_actual['posicion_ambulancia'],estado_actual["pacientes_por_recoger"]+CN, n, n_nodos_expandidos)
                 if all(caminos_a_pacientes.get(paciente) is not None and None not in caminos_a_pacientes[paciente] for paciente in estado_actual['pacientes_por_recoger'] + CN):
                     paciente_mas_cercano = min(estado_actual['pacientes_por_recoger']+CN, key=lambda paciente: len(caminos_a_pacientes[paciente]))
                     if paciente_mas_cercano in CN:#vamos al centro de no contagiados
                         try:
-                            ir_a_centro(mapa, estado_actual, paciente_mas_cercano, "N",camino_total,start)
+                            ir_a_centro(mapa, estado_actual, paciente_mas_cercano, "N",camino_total,start, n, n_nodos_expandidos)
                         except Exception as e:
                             print(f"No se pudo acceder a: {e}")
                             return None
 
                     else:
                         try:
-                            recoger_paciente(mapa, estado_actual, paciente_mas_cercano, caminos_a_pacientes,camino_total,start)
+                            recoger_paciente(mapa, estado_actual, paciente_mas_cercano, caminos_a_pacientes,camino_total,start, n, n_nodos_expandidos)
                         except Exception as e:
                             print(f"No se pudo recoger al paciente: {e}")
                             return None
@@ -273,18 +286,18 @@ def traslado_pacientes(mapa, inicio_ambulancia, pacientes,pacientes_CC,pacientes
             if  len(estado_actual['espacio_ambulancia']) == 9 and estado_actual['espacio_ambulancia'][-1]=="N": #Caso de que haya 9N no puede ir a por C solo a por N o a vaciar
                 if estado_actual['posicion_ambulancia'] in estado_actual["pacientes_no_contagiosos_por_recoger"]:
                     estado_actual["pacientes_no_contagiosos_por_recoger"].remove(estado_actual['posicion_ambulancia'])
-                caminos_a_pacientes = buscar_camino_a_todos(mapa, estado_actual['posicion_ambulancia'],estado_actual["pacientes_no_contagiosos_por_recoger"]+CN)
+                caminos_a_pacientes = buscar_camino_a_todos(mapa, estado_actual['posicion_ambulancia'],estado_actual["pacientes_no_contagiosos_por_recoger"]+CN,n, n_nodos_expandidos)
                 if all(caminos_a_pacientes.get(paciente) is not None and None not in caminos_a_pacientes[paciente] for paciente in estado_actual['pacientes_no_contagiosos_por_recoger'] + CN):
                     paciente_mas_cercano = min(estado_actual['pacientes_no_contagiosos_por_recoger']+CN, key=lambda paciente: len(caminos_a_pacientes[paciente]))
                     if paciente_mas_cercano in CN:#vamos al centro de no contagiados
                         try:
-                            ir_a_centro(mapa, estado_actual, paciente_mas_cercano, "N",camino_total,start)
+                            ir_a_centro(mapa, estado_actual, paciente_mas_cercano, "N",camino_total,start, n, n_nodos_expandidos)
                         except Exception as e:
                             print(f"No se pudo acceder a: {e}")
                             return None
                     else:
                         try:
-                            recoger_paciente(mapa, estado_actual, paciente_mas_cercano, caminos_a_pacientes,camino_total,start)
+                            recoger_paciente(mapa, estado_actual, paciente_mas_cercano, caminos_a_pacientes,camino_total,start, n, n_nodos_expandidos)
                         except Exception as e:
                             print(f"No se pudo recoger al paciente: {e}")
                             return None
@@ -292,10 +305,10 @@ def traslado_pacientes(mapa, inicio_ambulancia, pacientes,pacientes_CC,pacientes
         if  len(estado_actual['espacio_ambulancia']) > 9 : #caso de que haya 10 N vaya a CN
             if estado_actual['posicion_ambulancia'] in estado_actual["pacientes_no_contagiosos_por_recoger"]:
                 estado_actual["pacientes_no_contagiosos_por_recoger"].remove(estado_actual['posicion_ambulancia'])
-            caminos_a_centros =buscar_camino_a_todos(mapa, estado_actual['posicion_ambulancia'],CN)
+            caminos_a_centros =buscar_camino_a_todos(mapa, estado_actual['posicion_ambulancia'],CN, n, n_nodos_expandidos)
             centro_mas_cercano = min(CN, key=lambda paciente: len(caminos_a_centros[paciente]))
             try:
-                ir_a_centro(mapa, estado_actual, centro_mas_cercano, "N",camino_total,start)
+                ir_a_centro(mapa, estado_actual, centro_mas_cercano, "N",camino_total,start, n, n_nodos_expandidos)
             except Exception as e:
                 print(f"No se pudo acceder a: {e}")
                 return None
@@ -311,7 +324,7 @@ def traslado_pacientes(mapa, inicio_ambulancia, pacientes,pacientes_CC,pacientes
 
         #cuando no haya pacientes a recoger y la mabulancia este vacia que vuelva al parking
         if len(estado_actual['espacio_ambulancia'])==0 and not estado_actual['pacientes_por_recoger']:
-            camino = a_star_search(mapa, estado_actual['posicion_ambulancia'], lugar_inicio(mapa))
+            camino = a_star_search(mapa, estado_actual['posicion_ambulancia'], lugar_inicio(mapa), n, n_nodos_expandidos)
             if camino is None:
                 return None
             costo_energia = obtener_costo_energia(mapa, estado_actual['posicion_ambulancia'], camino,start)
@@ -321,7 +334,7 @@ def traslado_pacientes(mapa, inicio_ambulancia, pacientes,pacientes_CC,pacientes
             estado_actual['posicion_ambulancia'] = camino[-1]
             estado_actual['energia'] = 50 
 
-    return estado_actual,camino_total
+    return estado_actual,camino_total, n_nodos_expandidos
 
 # Función para comparar dos estados ignorando el orden de las listas
 def son_estados_iguales(estado1, estado2):
@@ -422,19 +435,18 @@ def imprimir_solucion(mapa, camino,estado_actual):
         valor_celda=mapa[fila][columna]
         if valor_celda.isdigit():
             carga_ambulancia-=int(valor_celda)
-        elif valor_celda=="P":
+        elif valor_celda=="P" and (posicion == camino[-1] or posicion == camino[0]): #si no va a posta a repostar al parking asumimos que no reposta a pesar de que pase por esta casilla
             carga_ambulancia=50
         else:
             carga_ambulancia-=1
         formato = f"({fila},{columna}):{valor_celda}:{carga_ambulancia}"
-        with open('ASTAR-test/mapa-1.output', 'a') as archivo:
+        with open(output, 'a') as archivo:
            archivo.write(str(formato) + '\n')
 
 
-def calcular_stats(tiempo, dir_output, dir_stats):
+def calcular_stats(tiempo, dir_output, dir_stats, n_nodos_expandidos):
     coste_total = 0
     longitud_plan = 0
-    nodos_expandidos = 0
     with open(dir_output, 'r') as archivo:
         for linea in archivo:
             elementos = linea.split(':')
@@ -450,7 +462,7 @@ def calcular_stats(tiempo, dir_output, dir_stats):
            archivo.write('Tiempo total: ' + str(tiempo) + '\n')
            archivo.write('Coste total: ' + str(coste_total) + '\n')
            archivo.write('Longitud del plan: ' + str(longitud_plan) + '\n')
-           archivo.write('Nodos expandidos: ' + str(nodos_expandidos) + '\n')
+           archivo.write('Nodos expandidos: ' + str(n_nodos_expandidos) + '\n')
 def actualizar_mapa(mapa,estado_actual):
     fila, columna = estado_actual['posicion_ambulancia']
     mapa[fila][columna]="1"
@@ -463,22 +475,25 @@ if __name__ == "__main__":
         sys.exit(1)
     #print("primer")
     file_path = sys.argv[1]
-    num_h = int(sys.argv[2])  
+    num_h = int(sys.argv[2])
+    n_nodos_expandidos = 0 
     map_info = parse_map(file_path)
     empieza=True
     n_mapa = file_path.split('.')
     output = 'ASTAR-test/' + n_mapa[0]+".output"
+    print("miOUTPUT",output)
     stat = 'ASTAR-test/' + n_mapa[0]+".stat"
     with open(output, 'w') as archivo:
         archivo.write('')
     with open(stat, 'w') as archivo:
         archivo.write('')
     start_time = time.time()
-    resultado,camino_seguido = traslado_pacientes(map_info['mapa'], map_info['current_location'], map_info['patient_locations'],map_info['contagious_locations'],
-                                map_info['non_contagious_locations'],map_info['treatment_centers_cc'],map_info['treatment_centers_cn'],empieza)
+    resultado,camino_seguido, n_nodos_expandidos = traslado_pacientes(map_info['mapa'], map_info['current_location'], map_info['patient_locations'],map_info['contagious_locations'],
+                                map_info['non_contagious_locations'],map_info['treatment_centers_cc'],map_info['treatment_centers_cn'],empieza, num_h, n_nodos_expandidos)
     end_time = time.time()
     total_time = end_time - start_time
-    calcular_stats(total_time, "ASTAR-test/mapa-1.output","ASTAR-test/mapa-1.stat")
+    
+    calcular_stats(total_time, output,stat,N_NODOS_EXPANDIDOSS)
     total_time = end_time - start_time
     if resultado is None:
         print("No existe solución")
