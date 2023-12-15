@@ -369,7 +369,7 @@ def  main():
     output = n_mapa[0]+".output"
     stat = n_mapa[0]+".stat"
     with open (stat, 'w') as archivo:
-        archivo.write('rty')
+        archivo.write('')
 
     global map_info
     map_info = parse_map(file_path)

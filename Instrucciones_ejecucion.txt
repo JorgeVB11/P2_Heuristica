@@ -1,0 +1,7 @@
+Ejecutar archivos .sh con terminal de linux
+
+Librerias networkx necesarias para el funcionamiento de MSKT
+	python3 -m pip install networkx
+
+En caso de no tener intalado python-contraint
+	pip install python-constraint
