@@ -3,8 +3,12 @@ import time
 import sys
 import networkx as nx
 
+
+
 map_info = []
 nodos_expandidos = 0
+
+#Funcion que obtiene los valores del mapa
 def parse_map(map_str):
     with open(map_str, 'r') as archivo:
         lines = archivo.readlines()
@@ -74,22 +78,22 @@ def lugar_inicio(mapa):
 
 #función para calcular el Minimum Spanning k-Trees
 def calcular_mst_k(aristas, k):
-    # Crea un grafo no dirigido ponderado
+    # Creamos un grafo no dirigido ponderado
     grafo = nx.Graph()
 
-    # Agrega aristas al grafo con sus respectivos pesos
+    # Agregamos aristas al grafo con sus respectivos pesos
     for arista, peso in aristas.items():
         grafo.add_edge(arista[0], arista[1], weight=peso)
 
-    # Inicializa una lista para almacenar los MST-k
+    # Inicializamos una lista para almacenar los MST-k
     mst_k_list = []
 
-    # Calcula k MST utilizando el algoritmo de Kruskal
+    # Calculamos k MST utilizando el algoritmo de Kruskal
     for _ in range(k):
         mst_k = nx.minimum_spanning_tree(grafo, algorithm='kruskal')
         mst_k_list.append(mst_k)
 
-        # Remueve las aristas del MST-k actual del grafo para calcular el siguiente
+        # Removemos las aristas del MST-k actual del grafo para calcular el siguiente
         for edge in mst_k.edges:
             grafo.remove_edge(edge[0], edge[1])
 
@@ -99,7 +103,7 @@ def calcular_mst_k(aristas, k):
 def calcular_aristas(estado,mapa):
     aristas = {}
 
-    # Obtén las ubicaciones relevantes del estado actual
+    # las ubicaciones relevantes del estado actual
     ubicacion_vehiculo = estado.ubicacion_vehiculo
     pacientes_sin_trasladar = estado.pacientes_sin_trasladar
 
@@ -119,23 +123,49 @@ def calcular_aristas(estado,mapa):
 
     return aristas
 
+
+# Función de heurística utilizando MST-k
+def heuristica_mst_k(estado_actual,mapa):
+    aristas = calcular_aristas(estado_actual,mapa)
+    mst_k_costo = calcular_mst_k(aristas, k=1)[0]  # Tomar el primer MST-k de la lista
+    
+    # Obtener las aristas del grafo y sumar sus pesos
+    costo_total_mst_k = sum(d['weight'] for u, v, d in mst_k_costo.edges(data=True)) * 0.5
+    
+    return costo_total_mst_k
+
+# Función de heurística teniendo en cuenta cuantos pacientes quedan por recoger
+def heuristica_pacientes_sin_trasladar(estado_actual):
+    # Cantidad total de pacientes sin trasladar
+    pacientes_sin_trasladar = len(estado_actual.pacientes_sin_trasladar)
+
+    # Ponderación del factor
+    peso_pacientes = 0.5
+
+    # Combinamos los factores con la ponderación
+    heuristica = (peso_pacientes * pacientes_sin_trasladar)
+
+    return heuristica
+
 # Clase para representar el estado del problema
 class Estado:
     def __init__(self, ubicacion_vehiculo, pacientes_sin_trasladar, energia_restante,plazas_vehiculo,paciente_vehiculo):
-        self.ubicacion_vehiculo = ubicacion_vehiculo
-        self.pacientes_sin_trasladar = pacientes_sin_trasladar
-        self.energia_restante = energia_restante
+        self.ubicacion_vehiculo = ubicacion_vehiculo    # Se guarda la posicion actual del vehiculo
+        self.pacientes_sin_trasladar = pacientes_sin_trasladar # Lista con los pacientes por recoger
+        self.energia_restante = energia_restante    # Valor de la energia que tiene la ambulancia
         self.plazas_vehiculo = plazas_vehiculo  # Lista que rastrea el tipo de paciente en cada plaza
         self.paciente_vehiculo = paciente_vehiculo # Lista que guarda la posicion de los pacientes de la ambulancia
 
     def __lt__(self, other):
-        # Define la comparación basada en algún criterio, por ejemplo, el costo total
+        # Define la comparación en base a el costo total
         return self.costo_total < other.costo_total if hasattr(self, 'costo_total') and hasattr(other, 'costo_total') else False
     
     def __hash__(self):
+        # Utiliza una tupla que incluye la ubicación del vehículo, la lista de pacientes sin trasladar y la energía restante.
         return hash((self.ubicacion_vehiculo, tuple(self.pacientes_sin_trasladar), self.energia_restante))
 
     def __eq__(self, other):
+        # Dos objetos son iguales si tienen la misma ubicación del vehículo, la misma lista de pacientes sin trasladar  y los mismos pacientes en la ambulancia.
         return (
             self.ubicacion_vehiculo == other.ubicacion_vehiculo and
             self.pacientes_sin_trasladar == other.pacientes_sin_trasladar and
@@ -144,86 +174,17 @@ class Estado:
         )
 
     def __str__(self):
+        # Devuelve una cadena formateada que incluye la ubicación del vehículo, el tipo de celda en esa ubicación y la energía restante.
         return f"({self.ubicacion_vehiculo[0] + 1},{self.ubicacion_vehiculo[1] + 1}):{map_info['mapa'][self.ubicacion_vehiculo[0]][self.ubicacion_vehiculo[1]]}:{self.energia_restante}"
-# Función de heurística utilizando MST-k
-def heuristica_mst_k(estado_actual,mapa):
-    aristas = calcular_aristas(estado_actual,mapa)
-    mst_k_costo = calcular_mst_k(aristas, k=1)[0]  # Tomar el primer MST-k de la lista
-    
-    # Obtener las aristas del grafo y sumar sus pesos
-    costo_total_mst_k = sum(d['weight'] for u, v, d in mst_k_costo.edges(data=True))
-    
-    return costo_total_mst_k
 
-def heuristica_num_pacientes_restantes(estado_actual, mapa):
-    # Obtén la lista de pacientes sin trasladar en el estado actual
-    pacientes_restantes = estado_actual.pacientes_sin_trasladar
-
-    # Devuelve la cantidad total de pacientes restantes como heurística
-    return len(pacientes_restantes)
-
-def heuristica_distancia_al_centro(mapa, estado_actual):
-    centros_restantes = map_info['treatment_centers_cc'] + map_info['treatment_centers_cn']
-    
-    # Si no hay centros restantes, la heurística es 0
-    if not centros_restantes:
-        return 0
-    
-    # Calcula la distancia Manhattan al centro más cercano
-    ubicacion_vehiculo = estado_actual.ubicacion_vehiculo
-    distancia_minima = float('inf')
-    
-    for centro in centros_restantes:
-        distancia = abs(ubicacion_vehiculo[0] - centro[0]) + abs(ubicacion_vehiculo[1] - centro[1])
-        distancia_minima = min(distancia, distancia_minima)
-    
-    return distancia_minima
-
-def heuristica_pacientes_sin_trasladar(estado_actual):
-    # Cantidad total de pacientes sin trasladar
-    pacientes_sin_trasladar = len(estado_actual.pacientes_sin_trasladar)
-
-    # Ponderación de los factores 
-    peso_pacientes = 0.5
-
-    # Combinar los factores con la ponderación
-    heuristica = (peso_pacientes * pacientes_sin_trasladar)
-
-    return heuristica
-def heuristica_prioridad_contagiosos(mapa, estado_actual):
-    # Número de pacientes contagiosos sin trasladar
-    contagiosos_sin_trasladar = estado_actual.pacientes_sin_trasladar.count('C')
-
-    # Ponderación de los factores (ajusta estos valores según sea necesario)
-    peso_contagiosos = 2.0
-
-
-    # Combinar los factores con la ponderación
-    heuristica = peso_contagiosos * contagiosos_sin_trasladar
-
-    return heuristica
-
-def distancia_manhattan(pos_actual, pacientes):
-    # Inicializar la distancia mínima con un valor grande para comparación
-    distancia_minima = float('inf')
-    if len(pacientes) == 0 or pos_actual in pacientes:
-        distancia_minima = 0
-    else:
-        for paciente in pacientes:
-            # Calcular la distancia Manhattan entre pos_actual y cada posición de paciente
-            distancia = abs(pos_actual[0] - paciente[0]) + abs(pos_actual[1] - paciente[1])
-            # Actualizar la distancia mínima si encontramos una distancia más corta
-            if distancia < distancia_minima:
-                distancia_minima = distancia
-            #if pos_actual == (1,2) and paciente ==(1,1):
-                #print("Distancia minima",distancia_minima, "a pacienete", paciente)
-    return distancia_minima
 
 # Implementación del algoritmo A* con MST-k
-def a_estrella_mst_k(mapa, estado_inicial,nombre_archivo, n_heuristica):
+def a_estrella(mapa, estado_inicial,nombre_archivo, n_heuristica):
+
     cola_prioridad = [(0, estado_inicial, [estado_inicial.ubicacion_vehiculo])]  # (costo_total, estado, camino)
     visitados = set()
     global nodos_expandidos
+
     while cola_prioridad:
         costo_actual, estado_actual, camino = heapq.heappop(cola_prioridad)
         nodos_expandidos += 1
@@ -237,7 +198,6 @@ def a_estrella_mst_k(mapa, estado_inicial,nombre_archivo, n_heuristica):
 
         # Verificar si alcanzamos el estado objetivo
         if es_estado_objetivo(mapa, estado_actual):
-            print("¡Estado objetivo alcanzado!")
             imprimir_output(mapa, camino, nombre_archivo)
             return costo_actual, camino, nodos_expandidos
 
@@ -246,10 +206,16 @@ def a_estrella_mst_k(mapa, estado_inicial,nombre_archivo, n_heuristica):
 
         for sucesor in sucesores:
             costo_sucesor = costo_actual + costo_entre_estados(sucesor.ubicacion_vehiculo, mapa)
+
             if n_heuristica == 1:
-                heuristica_sucesor = heuristica_pacientes_sin_trasladar(estado_actual)
+                heuristica_sucesor = heuristica_pacientes_sin_trasladar(sucesor)
+
             elif n_heuristica == 2:
-                heuristica_sucesor = distancia_manhattan(sucesor.ubicacion_vehiculo, sucesor.pacientes_sin_trasladar)
+                heuristica_sucesor = heuristica_mst_k(sucesor,mapa)
+
+            elif n_heuristica == 3: 
+                #Heuristica que se basa en utilizar la heruistica mas rentable en cada momento
+                heuristica_sucesor = max(heuristica_mst_k(sucesor,mapa), heuristica_pacientes_sin_trasladar(sucesor))
             else:
                 heuristica_sucesor = 0
             costo_total_sucesor = costo_sucesor + heuristica_sucesor
@@ -259,10 +225,11 @@ def a_estrella_mst_k(mapa, estado_inicial,nombre_archivo, n_heuristica):
 
     return costo_actual, None, nodos_expandidos  # No se encontró una solución
 
-# Funciones de utilidad (debes implementarlas según tu problema)
+# Funcion objetivo
 def es_estado_objetivo(mapa,estado):
-    if (
-        (estado.ubicacion_vehiculo == lugar_inicio(mapa)) and
+    #Cuando la ambulancia este vacia en el parking y no queden pacientes por recoger llegamos al estado final
+
+    if ((estado.ubicacion_vehiculo == lugar_inicio(mapa)) and
         (len(estado.pacientes_sin_trasladar) == 0) and
         (len(estado.paciente_vehiculo) == 0) and
         (estado.energia_restante == 50)):
@@ -270,7 +237,7 @@ def es_estado_objetivo(mapa,estado):
     return False
 
 
-
+# Funcion que genera los nodos sucesores
 def generar_sucesores(mapa, estado):
     direcciones = [(-1, 0), (1, 0), (0, -1), (0, 1)]
     sucesores = []
@@ -278,6 +245,7 @@ def generar_sucesores(mapa, estado):
     for dir_x, dir_y in direcciones:
         nueva_pos = (estado.ubicacion_vehiculo[0] + dir_x, estado.ubicacion_vehiculo[1] + dir_y)
 
+        #Siempre y cuando haya energia puede generar sucesores
         if estado.energia_restante > 0:
 
             #Si esta en una casilla valida dentro del mapa y no es un obstaculo
@@ -334,7 +302,7 @@ def generar_sucesores(mapa, estado):
 
     return sucesores
 
-
+#Coste de ir a una ubicacion en el mapa
 def costo_entre_estados(ubicacion, mapa):
 
     # Obtener el valor del estado al que se mueve
@@ -350,6 +318,7 @@ def costo_entre_estados(ubicacion, mapa):
 
     return coste
 
+#Funcion para imprimir correctamente el proceso seguido
 def imprimir_output(mapa, camino, nombre_archivo):
     with open(nombre_archivo, 'w') as archivo_solucion:
         for posicion in camino:
@@ -363,6 +332,7 @@ def imprimir_output(mapa, camino, nombre_archivo):
                 gasolina -= int(valor_celda)
             archivo_solucion.write(f"({x},{y}):{valor_celda}:{gasolina}\n")
 
+#Funcion para imprimir las estadisticas
 def imprimir_stats(tiempo, dir_output, dir_stats, n_nodos_expandidos):
     coste_total = 0
     longitud_plan = 0
@@ -387,31 +357,33 @@ def imprimir_stats(tiempo, dir_output, dir_stats, n_nodos_expandidos):
            archivo.write('Longitud del plan: ' + str(longitud_plan) + '\n')
            archivo.write('Nodos expandidos: ' + str(n_nodos_expandidos) + '\n')
 
-
+#Funcion main
 def  main():
     if len(sys.argv) != 3:
-        #print("Uso: python ASTARTraslados.py <path mapa.csv> <num-h>")
+        print("Uso: python ASTARTraslados.py <path mapa.csv> <num-h>")
         sys.exit(1)
-    #print("primer")
+
     file_path = sys.argv[1]
     num_h = int(sys.argv[2])
     n_mapa = file_path.split('.')
-    output = 'ASTAR-test/' + n_mapa[0]+".output"
-    stat = 'ASTAR-test/' + n_mapa[0]+".stat"
+    output = n_mapa[0]+".output"
+    stat = n_mapa[0]+".stat"
     with open (stat, 'w') as archivo:
-        archivo.write('')
+        archivo.write('rty')
+
     global map_info
     map_info = parse_map(file_path)
     start_time = time.time()
+
     # Llama a la función A* con el estado inicial del problema
-    costo_actual, resultado, nodos_expandidos = a_estrella_mst_k(map_info['mapa'],Estado(map_info['parking_location'],map_info['patient_locations'],map_info['current_energy'],[],[]),output,num_h)
+    _ , resultado, nodos_expandidos = a_estrella(map_info['mapa'],Estado(map_info['parking_location'],map_info['patient_locations'],map_info['current_energy'],[],[]),output,num_h)
+    
     end_time = time.time()
     total_time = end_time - start_time
     imprimir_stats(total_time,output, stat, nodos_expandidos)
-    print("Camino de la solución:", resultado,total_time)
-    print("Gasolina total: ", costo_actual)
+
     if resultado:
-       print("Solucion encontrada")
+        print("Solución encontrada y guardada")
     else:
         print("No se encontró una solución.")
 
