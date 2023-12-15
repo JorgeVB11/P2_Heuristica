@@ -12,8 +12,10 @@ def cargar_datos(path):
 
     # Obtener plazas de conexión
     plazas_conexion_line = lines[1][3:].strip()  # Obtener la línea de las plazas de conexión
-    plazas_conexion = [tuple(map(int, coord.strip('()').split(','))) for coord in plazas_conexion_line.split(')(')]
-
+    if plazas_conexion_line:
+        plazas_conexion = [tuple(map(int, coord.strip('()').split(','))) for coord in plazas_conexion_line.split(')(')]
+    else:
+        plazas_conexion = None
     # Obtener vehículos
     vehiculos = [line.strip() for line in lines[2:]]
 
@@ -43,8 +45,9 @@ def resolver_problema(filas, columnas, plazas_conexion, vehiculos):
 
         # Restricción de conexión eléctrica para vehículos con congelador
         if congelador=='C':
+            if plazas_conexion == None:
+                return 0
             problem.addConstraint(InSetConstraint(plazas_conexion), [vehiculo_id])
-
         # Restricción para TSU que no puede tener TNU por delante 
         for vehiculo2 in vehiculos:
             vehiculo2_id, tipo2, _ = vehiculo2.split('-')
@@ -105,6 +108,8 @@ if __name__ == "__main__":
         sys.exit(1)
 
     path_parking = sys.argv[1]
+    path_salida = path_parking.split('.')
+    path_salida_completo = path_salida[0] + '.csv'
     filas, columnas, plazas_conexion, vehiculos = cargar_datos(path_parking)
     # Imprimir los valores obtenidos
     print(f"Filas: {filas}")
@@ -117,10 +122,12 @@ if __name__ == "__main__":
     if soluciones:
         # Barajar las soluciones para mostrar algunas de forma aleatoria
         random.shuffle(soluciones)
-        path_salida = 'exit.csv'
-        guardar_soluciones(soluciones, path_salida, filas, columnas, num_sol_imp=3)
-        print(f"Soluciones guardadas en {path_salida}")
+        guardar_soluciones(soluciones, path_salida_completo, filas, columnas, num_sol_imp=3)
+        print(f"Soluciones guardadas en {path_salida_completo}")
     else:
-        print("No se encontraron soluciones.")
+        with open(path_salida_completo, 'w', newline='', encoding='utf-8') as file:
+            writer = csv.writer(file)
 
+            # Escribir la línea "nSol: 0"
+            writer.writerow(["N. Sol:,0"])
     

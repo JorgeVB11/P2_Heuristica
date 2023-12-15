@@ -1,0 +1,22 @@
+N. Sol:,2175288
+
+Solución 1
+4-TNU-C,1-TSU-C,-,-,-,-
+-,-,6-TNU-X,-,-,5-TSU-X
+-,-,2-TNU-X,-,-,-
+8-TSU-C,-,-,-,-,-
+-,7-TNU-C,-,3-TNU-X,-,-
+
+Solución 2
+1-TSU-C,8-TSU-C,-,-,-,-
+-,-,3-TNU-X,-,-,5-TSU-X
+-,-,-,-,-,2-TNU-X
+-,-,-,6-TNU-X,-,-
+4-TNU-C,7-TNU-C,-,-,-,-
+
+Solución 3
+4-TNU-C,8-TSU-C,-,-,-,-
+-,-,2-TNU-X,-,-,-
+6-TNU-X,-,-,-,5-TSU-X,-
+-,-,-,3-TNU-X,-,-
+7-TNU-C,1-TSU-C,-,-,-,-

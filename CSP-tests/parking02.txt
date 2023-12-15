@@ -1,6 +1,6 @@
 3x3
 PE:(1,1)(1,2)(2,1)
 1-TSU-C
-2-TNU-X
-3-TNU-X
+2-TNU-C
+3-TNU-C
 4-TNU-C

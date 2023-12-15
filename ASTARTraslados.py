@@ -363,7 +363,7 @@ if __name__ == "__main__":
     file_path = sys.argv[1]
     num_h = int(sys.argv[2])
 
-    map_info = parse_map('mapa.csv')
+    map_info = parse_map('mapa-2.csv')
     initial_state = map_info["current_location"]
     #print("Estado inicial",initial_state)
     start_time = time.time()

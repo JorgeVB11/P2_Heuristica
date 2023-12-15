@@ -332,7 +332,7 @@ if __name__ == "__main__":
     file_path = sys.argv[1]
     num_h = int(sys.argv[2])
 
-    map_info = parse_map('mapa.csv')
+    map_info = parse_map(file_path)
     initial_state = map_info.copy()
 
     start_time = time.time()
